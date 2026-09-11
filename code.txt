@@ -59,19 +59,7 @@
         {"type": "aggregate", "groupby": ["TRL level", "TrlNum"], "ops": ["count"], "as": ["rowCount"]},
         {"type": "collect", "sort": {"field": "TrlNum", "order": "ascending"}},
         {"type": "window", "ops": ["row_number"], "as": ["trlNumber"]},
-        {"type": "formula", "expr": "datum.trlNumber - 1", "as": "trlIndex"},
-        {"type": "formula", "expr": "innerRadius + datum.trlIndex * ringStep", "as": "radius"}
-      ]
-    },
-    {
-      "name": "stageSeparators",
-      "source": "topicOrder",
-      "transform": [
-        {"type": "cross", "with": "stageOrder", "as": ["topic", "stage"]},
-        {"type": "filter", "expr": "datum.stage.stageIndex < stageCount - 1"},
-        {"type": "formula", "expr": "datum.topic.topicIndex * topicAngle + datum.stage.stageNumber * slotAngle - PI / 2", "as": "angle"},
-        {"type": "formula", "expr": "centerX + stageRuleRadius * cos(datum.angle)", "as": "x2"},
-        {"type": "formula", "expr": "centerY + stageRuleRadius * sin(datum.angle)", "as": "y2"}
+        {"type": "formula", "expr": "datum.trlNumber - 1", "as": "trlIndex"}
       ]
     },
     {
@@ -93,17 +81,37 @@
       ]
     },
     {
-      "name": "stageLabels",
-      "source": "topicOrder",
+      "name": "stageGrid",
       "transform": [
-        {"type": "cross", "with": "stageOrder", "as": ["topic", "stage"]},
-        {"type": "formula", "expr": "datum.topic.topicIndex * topicAngle + (stageCount - datum.stage.stageIndex - 0.5) * slotAngle - PI / 2", "as": "angle"},
-        {"type": "formula", "expr": "stageLabelRadius + (datum.stage.stageIndex % 2) * 14", "as": "labelRadius"},
+        {"type": "sequence", "start": 0, "stop": {"signal": "topicCount * stageCount"}, "as": "slot"},
+        {"type": "formula", "expr": "floor(datum.slot / stageCount)", "as": "topicIndex"},
+        {"type": "formula", "expr": "datum.slot % stageCount", "as": "stageIndex"},
+        {"type": "lookup", "from": "topicOrder", "key": "topicIndex", "fields": ["topicIndex"], "values": ["Topic"], "as": ["Topic"]},
+        {
+          "type": "lookup",
+          "from": "stageOrder",
+          "key": "stageIndex",
+          "fields": ["stageIndex"],
+          "values": ["Internal Stage", "displayLabel", "stageNumber"],
+          "as": ["StageLabel", "displayLabel", "stageNumber"]
+        },
+        {"type": "formula", "expr": "datum.topicIndex * topicAngle + (stageCount - datum.stageIndex - 0.5) * slotAngle - PI / 2", "as": "angle"},
+        {"type": "formula", "expr": "stageLabelRadius + (datum.stageIndex % 2) * 14", "as": "labelRadius"},
         {"type": "formula", "expr": "centerX + datum.labelRadius * cos(datum.angle)", "as": "x"},
         {"type": "formula", "expr": "centerY + datum.labelRadius * sin(datum.angle)", "as": "y"},
         {"type": "formula", "expr": "datum.angle * 180 / PI + 90", "as": "rawAngle"},
         {"type": "formula", "expr": "datum.rawAngle > 90 && datum.rawAngle < 270 ? datum.rawAngle + 180 : datum.rawAngle", "as": "textAngle"},
-        {"type": "formula", "expr": "datum.rawAngle > 90 && datum.rawAngle < 270 ? 'right' : 'left'", "as": "textAlign"}
+        {"type": "formula", "expr": "datum.rawAngle > 90 && datum.rawAngle < 270 ? 'right' : 'left'", "as": "textAlign"},
+        {"type": "formula", "expr": "datum.topicIndex * topicAngle + datum.stageNumber * slotAngle - PI / 2", "as": "separatorAngle"},
+        {"type": "formula", "expr": "centerX + stageRuleRadius * cos(datum.separatorAngle)", "as": "separatorX2"},
+        {"type": "formula", "expr": "centerY + stageRuleRadius * sin(datum.separatorAngle)", "as": "separatorY2"}
+      ]
+    },
+    {
+      "name": "stageSeparators",
+      "source": "stageGrid",
+      "transform": [
+        {"type": "filter", "expr": "datum.stageIndex < stageCount - 1"}
       ]
     },
     {
@@ -156,8 +164,8 @@
           "y": {"signal": "centerY"},
           "startAngle": {"value": 0},
           "endAngle": {"signal": "2 * PI"},
-          "innerRadius": {"signal": "max(datum.radius - 0.5, 0)"},
-          "outerRadius": {"signal": "datum.radius + 0.5"},
+          "innerRadius": {"signal": "max(innerRadius + datum.trlIndex * ringStep - 0.5, 0)"},
+          "outerRadius": {"signal": "innerRadius + datum.trlIndex * ringStep + 0.5"},
           "stroke": {"value": "#D0D0D0"},
           "strokeWidth": {"value": 1},
           "fillOpacity": {"value": 0}
@@ -171,8 +179,8 @@
         "update": {
           "x": {"signal": "centerX"},
           "y": {"signal": "centerY"},
-          "x2": {"field": "x2"},
-          "y2": {"field": "y2"},
+          "x2": {"field": "separatorX2"},
+          "y2": {"field": "separatorY2"},
           "stroke": {"value": "#D8D8D8"},
           "strokeWidth": {"value": 1},
           "strokeDash": {"value": [4, 4]}
@@ -229,12 +237,12 @@
     },
     {
       "type": "text",
-      "from": {"data": "stageLabels"},
+      "from": {"data": "stageGrid"},
       "encode": {
         "update": {
           "x": {"field": "x"},
           "y": {"field": "y"},
-          "text": {"signal": "datum.stage.displayLabel"},
+          "text": {"field": "displayLabel"},
           "angle": {"field": "textAngle"},
           "align": {"field": "textAlign"},
           "baseline": {"value": "middle"},
