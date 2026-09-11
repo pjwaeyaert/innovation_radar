@@ -136,7 +136,7 @@
         },
         {"type": "window", "groupby": ["TopicIndex", "StageIndex", "TrlIndex"], "ops": ["row_number"], "as": ["overlapIndex"]},
         {"type": "formula", "expr": "datum.TopicIndex * topicAngle + (stageCount - datum.StageIndex - 0.5) * slotAngle - PI / 2", "as": "angle"},
-        {"type": "formula", "expr": "innerRadius + datum.TrlIndex * ringStep", "as": "radius"},
+        {"type": "formula", "expr": "ringCount > 1 ? innerRadius + datum.TrlIndex * ringStep : dataOuterRadius", "as": "radius"},
         {"type": "formula", "expr": "(datum.overlapIndex - (datum.overlapCount + 1) / 2) * overlapOffsetStep", "as": "overlapOffset"},
         {"type": "formula", "expr": "centerX + datum.radius * cos(datum.angle) + datum.overlapOffset * cos(datum.angle + PI / 2)", "as": "x"},
         {"type": "formula", "expr": "centerY + datum.radius * sin(datum.angle) + datum.overlapOffset * sin(datum.angle + PI / 2)", "as": "y"}
@@ -164,8 +164,8 @@
           "y": {"signal": "centerY"},
           "startAngle": {"value": 0},
           "endAngle": {"signal": "2 * PI"},
-          "innerRadius": {"signal": "max(innerRadius + datum.trlIndex * ringStep - 0.5, 0)"},
-          "outerRadius": {"signal": "innerRadius + datum.trlIndex * ringStep + 0.5"},
+          "innerRadius": {"signal": "max((ringCount > 1 ? innerRadius + datum.trlIndex * ringStep : dataOuterRadius) - 0.5, 0)"},
+          "outerRadius": {"signal": "(ringCount > 1 ? innerRadius + datum.trlIndex * ringStep : dataOuterRadius) + 0.5"},
           "stroke": {"value": "#D0D0D0"},
           "strokeWidth": {"value": 1},
           "fillOpacity": {"value": 0}
