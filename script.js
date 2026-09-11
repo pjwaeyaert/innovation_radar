@@ -104,6 +104,7 @@ function renderGrid() {
   radarData.stages.forEach((stage, stageIndex) => {
     const { middle } = ringBounds(stageIndex);
     const labelPoint = polarToCartesian(middle, Math.PI * 1.25);
+    const group = createSvgElement("g");
     const text = createSvgElement("text", {
       x: labelPoint.x,
       y: labelPoint.y,
@@ -114,23 +115,24 @@ function renderGrid() {
       "dominant-baseline": "middle"
     });
     text.textContent = stage;
+    group.appendChild(text);
+    svg.appendChild(group);
 
+    const boxSize = text.getBBox();
     const paddingX = 12;
     const paddingY = 8;
-    const estimatedWidth = stage.length * 9 + paddingX * 2;
     const box = createSvgElement("rect", {
-      x: labelPoint.x - estimatedWidth / 2,
-      y: labelPoint.y - 16,
-      width: estimatedWidth,
-      height: 32,
+      x: boxSize.x - paddingX,
+      y: boxSize.y - paddingY,
+      width: boxSize.width + paddingX * 2,
+      height: boxSize.height + paddingY * 2,
       rx: 16,
       fill: "#ffffff",
       stroke: stageIndex === 0 ? "#2563eb" : "#cbd5e1",
       "stroke-width": stageIndex === 0 ? 2 : 1.5
     });
 
-    svg.appendChild(box);
-    svg.appendChild(text);
+    group.insertBefore(box, text);
   });
 }
 
@@ -173,6 +175,7 @@ function renderEntries() {
       const x = base.x + tangentX * tangentOffset + radialX * radialOffset;
       const y = base.y + tangentY * tangentOffset + radialY * radialOffset;
       const group = createSvgElement("g", {
+        role: "img",
         "aria-label": `${entry.label} — ${entry.topic}, ${entry.stage}`
       });
       const title = createSvgElement("title");
