@@ -164,7 +164,7 @@
     }
   ],
   "legends": [
-    {"symbolFill": "mediumColor", "title": "Medium", "orient": "right"}
+    {"fill": "mediumColor", "title": "Medium", "orient": "right"}
   ],
   "marks": [
     {
