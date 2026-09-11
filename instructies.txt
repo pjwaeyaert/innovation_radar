@@ -1,0 +1,3 @@
+1) ik wil de radar meer generiek maken. Als er bvb een topic bijkomt moet de radar automatisch het aantal delen in de radar aanpassen. Idem voor andere velden; 
+2) de labels van de Internal stage overlappen momenteel. Dit moet je corrigeren op de radar; 
+3) als er twee punten op dezelfde plaats staan mogen deze niet op elkaar staan maar moeten naast elkaar gezet worden.
