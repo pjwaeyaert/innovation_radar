@@ -164,12 +164,29 @@ function renderEntries() {
     const tangentX = -Math.sin(angle);
     const tangentY = Math.cos(angle);
     const spacing = 18;
-    const columns = Math.ceil(Math.sqrt(items.length));
-    const rowCount = Math.ceil(items.length / columns);
     const maxTangentOffset = Math.max(middle * Math.sin(sliceAngle / 2) - 18, 0);
     const maxRadialOffset = Math.max(ringWidth / 2 - 18, 0);
-    const tangentStep = columns > 1 ? Math.min(spacing, (maxTangentOffset * 2) / (columns - 1)) : 0;
-    const radialStep = rowCount > 1 ? Math.min(spacing, (maxRadialOffset * 2) / (rowCount - 1)) : 0;
+    const availableTangent = maxTangentOffset * 2;
+    const availableRadial = maxRadialOffset * 2;
+
+    let layout = null;
+    for (let columns = 1; columns <= items.length; columns += 1) {
+      const rows = Math.ceil(items.length / columns);
+      const tangentStep = columns > 1 ? availableTangent / (columns - 1) : Infinity;
+      const radialStep = rows > 1 ? availableRadial / (rows - 1) : Infinity;
+      const minSeparation = Math.min(tangentStep, radialStep);
+
+      if (!layout || minSeparation > layout.minSeparation) {
+        layout = { columns, rows, tangentStep, radialStep, minSeparation };
+      }
+    }
+
+    const columns = layout.columns;
+    const rowCount = layout.rows;
+    const tangentStep = Number.isFinite(layout.tangentStep) ? Math.min(spacing, layout.tangentStep) : 0;
+    const radialStep = Number.isFinite(layout.radialStep) ? Math.min(spacing, layout.radialStep) : 0;
+    const markerRadius = Math.max(4, Math.min(8, Math.floor(layout.minSeparation / 2 - 2)));
+    const showLabel = layout.minSeparation >= 28;
 
     items.forEach(({ entry }, index) => {
       const column = index % columns;
@@ -178,33 +195,39 @@ function renderEntries() {
       const radialOffset = (row - (rowCount - 1) / 2) * radialStep;
       const x = base.x + tangentX * tangentOffset + radialX * radialOffset;
       const y = base.y + tangentY * tangentOffset + radialY * radialOffset;
+      const titleId = `entry-title-${topicIndex}-${stageIndex}-${index}`;
       const group = createSvgElement("g", {
         role: "img",
-        "aria-label": `${entry.label} — ${entry.topic}, ${entry.stage}`
+        "aria-labelledby": titleId
       });
-      const title = createSvgElement("title");
+      const title = createSvgElement("title", {
+        id: titleId
+      });
       title.textContent = `${entry.label} — ${entry.topic}, ${entry.stage}`;
 
       group.appendChild(title);
       group.appendChild(createSvgElement("circle", {
         cx: x,
         cy: y,
-        r: 8,
+        r: markerRadius,
         fill: entry.color,
         stroke: "#ffffff",
-        "stroke-width": 3
+        "stroke-width": Math.max(2, markerRadius / 2)
       }));
 
-      const label = createSvgElement("text", {
-        x,
-        y: y - 18,
-        "text-anchor": "middle",
-        fill: "#0f172a",
-        "font-size": 12,
-        "font-weight": 600
-      });
-      label.textContent = entry.label;
-      group.appendChild(label);
+      if (showLabel) {
+        const label = createSvgElement("text", {
+          x,
+          y: y - (markerRadius + 10),
+          "text-anchor": "middle",
+          fill: "#0f172a",
+          "font-size": 12,
+          "font-weight": 600
+        });
+        label.textContent = entry.label;
+        group.appendChild(label);
+      }
+
       svg.appendChild(group);
     });
   });
@@ -238,6 +261,4 @@ function renderRadar() {
   renderLegend();
 }
 
-window.addEventListener("load", () => {
-  window.requestAnimationFrame(renderRadar);
-});
+window.addEventListener("load", renderRadar);
