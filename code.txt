@@ -110,9 +110,14 @@
     },
     {
       "name": "stageSeparators",
-      "source": "stageGrid",
       "transform": [
-        {"type": "filter", "expr": "datum.stageIndex < stageCount - 1"}
+        {"type": "sequence", "start": 0, "stop": {"signal": "topicCount * max(stageCount - 1, 0)"}, "as": "slot"},
+        {"type": "formula", "expr": "floor(datum.slot / max(stageCount - 1, 1))", "as": "topicIndex"},
+        {"type": "formula", "expr": "datum.slot % max(stageCount - 1, 1)", "as": "stageIndex"},
+        {"type": "formula", "expr": "datum.stageIndex + 1", "as": "stageNumber"},
+        {"type": "formula", "expr": "datum.topicIndex * topicAngle + datum.stageNumber * slotAngle - PI / 2", "as": "separatorAngle"},
+        {"type": "formula", "expr": "centerX + stageRuleRadius * cos(datum.separatorAngle)", "as": "separatorX2"},
+        {"type": "formula", "expr": "centerY + stageRuleRadius * sin(datum.separatorAngle)", "as": "separatorY2"}
       ]
     },
     {
