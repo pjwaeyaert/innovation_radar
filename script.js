@@ -172,8 +172,14 @@ function renderEntries() {
       const radialOffset = (row - (rowCount - 1) / 2) * spacing;
       const x = base.x + tangentX * tangentOffset + radialX * radialOffset;
       const y = base.y + tangentY * tangentOffset + radialY * radialOffset;
+      const group = createSvgElement("g", {
+        "aria-label": `${entry.label} — ${entry.topic}, ${entry.stage}`
+      });
+      const title = createSvgElement("title");
+      title.textContent = `${entry.label} — ${entry.topic}, ${entry.stage}`;
 
-      svg.appendChild(createSvgElement("circle", {
+      group.appendChild(title);
+      group.appendChild(createSvgElement("circle", {
         cx: x,
         cy: y,
         r: 8,
@@ -191,7 +197,8 @@ function renderEntries() {
         "font-weight": 600
       });
       label.textContent = entry.label;
-      svg.appendChild(label);
+      group.appendChild(label);
+      svg.appendChild(group);
     });
   });
 }
