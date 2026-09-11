@@ -20,6 +20,7 @@
     {"name": "topicAngle", "update": "2 * PI / topicCount"},
     {"name": "slotAngle", "update": "topicAngle / stageCount"},
     {"name": "ringStep", "update": "ringCount > 1 ? (dataOuterRadius - innerRadius) / (ringCount - 1) : 0"},
+    {"name": "singleRingRadius", "update": "(innerRadius + dataOuterRadius) / 2"},
     {"name": "topicLabelFontSize", "update": "clamp(13 - topicCount / 3, 8, 11)"},
     {"name": "stageLabelFontSize", "update": "clamp(12 - topicCount * stageCount / 15, 6, 8)"}
   ],
@@ -136,10 +137,19 @@
         },
         {"type": "window", "groupby": ["TopicIndex", "StageIndex", "TrlIndex"], "ops": ["row_number"], "as": ["overlapIndex"]},
         {"type": "formula", "expr": "datum.TopicIndex * topicAngle + (stageCount - datum.StageIndex - 0.5) * slotAngle - PI / 2", "as": "angle"},
-        {"type": "formula", "expr": "ringCount > 1 ? innerRadius + datum.TrlIndex * ringStep : dataOuterRadius", "as": "radius"},
+        {"type": "formula", "expr": "ringCount > 1 ? innerRadius + datum.TrlIndex * ringStep : singleRingRadius", "as": "radius"},
         {"type": "formula", "expr": "(datum.overlapIndex - (datum.overlapCount + 1) / 2) * overlapOffsetStep", "as": "overlapOffset"},
         {"type": "formula", "expr": "centerX + datum.radius * cos(datum.angle) + datum.overlapOffset * cos(datum.angle + PI / 2)", "as": "x"},
         {"type": "formula", "expr": "centerY + datum.radius * sin(datum.angle) + datum.overlapOffset * sin(datum.angle + PI / 2)", "as": "y"}
+      ]
+    },
+    {
+      "name": "mediumOrder",
+      "source": "points",
+      "transform": [
+        {"type": "aggregate", "groupby": ["Medium"], "ops": ["count"], "as": ["rowCount"]},
+        {"type": "formula", "expr": "datum.Medium === 'Soil' ? 0 : datum.Medium === 'Water' ? 1 : 2", "as": "sortGroup"},
+        {"type": "collect", "sort": {"field": ["sortGroup", "Medium"], "order": ["ascending", "ascending"]}}
       ]
     }
   ],
@@ -147,8 +157,8 @@
     {
       "name": "mediumColor",
       "type": "ordinal",
-      "domain": {"data": "points", "field": "Medium"},
-      "range": {"scheme": "tableau10"}
+      "domain": {"data": "mediumOrder", "field": "Medium"},
+      "range": ["#FF2314", "#63ABFF", "#2CA02C", "#9467BD", "#8C564B", "#E377C2", "#7F7F7F", "#BCBD22", "#17BECF", "#1F77B4"]
     }
   ],
   "legends": [
@@ -164,8 +174,8 @@
           "y": {"signal": "centerY"},
           "startAngle": {"value": 0},
           "endAngle": {"signal": "2 * PI"},
-          "innerRadius": {"signal": "max((ringCount > 1 ? innerRadius + datum.trlIndex * ringStep : dataOuterRadius) - 0.5, 0)"},
-          "outerRadius": {"signal": "(ringCount > 1 ? innerRadius + datum.trlIndex * ringStep : dataOuterRadius) + 0.5"},
+          "innerRadius": {"signal": "max((ringCount > 1 ? innerRadius + datum.trlIndex * ringStep : singleRingRadius) - 0.5, 0)"},
+          "outerRadius": {"signal": "(ringCount > 1 ? innerRadius + datum.trlIndex * ringStep : singleRingRadius) + 0.5"},
           "stroke": {"value": "#D0D0D0"},
           "strokeWidth": {"value": 1},
           "fillOpacity": {"value": 0}
