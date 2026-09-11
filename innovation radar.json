@@ -21,8 +21,8 @@
     {"name": "slotAngle", "update": "topicAngle / stageCount"},
     {"name": "ringStep", "update": "ringCount > 1 ? (dataOuterRadius - innerRadius) / (ringCount - 1) : 0"},
     {"name": "singleRingRadius", "update": "(innerRadius + dataOuterRadius) / 2"},
-    {"name": "topicLabelFontSize", "update": "clamp(13 - topicCount / 3, 8, 11)"},
-    {"name": "stageLabelFontSize", "update": "clamp(12 - topicCount * stageCount / 15, 6, 8)"}
+    {"name": "topicLabelFontSize", "update": "max(8, min(11, 13 - topicCount / 3))"},
+    {"name": "stageLabelFontSize", "update": "max(6, min(8, 12 - topicCount * stageCount / 15))"}
   ],
   "data": [
     {"name": "dataset"},
@@ -102,10 +102,7 @@
         {"type": "formula", "expr": "centerY + datum.labelRadius * sin(datum.angle)", "as": "y"},
         {"type": "formula", "expr": "datum.angle * 180 / PI + 90", "as": "rawAngle"},
         {"type": "formula", "expr": "datum.rawAngle > 90 && datum.rawAngle < 270 ? datum.rawAngle + 180 : datum.rawAngle", "as": "textAngle"},
-        {"type": "formula", "expr": "datum.rawAngle > 90 && datum.rawAngle < 270 ? 'right' : 'left'", "as": "textAlign"},
-        {"type": "formula", "expr": "datum.topicIndex * topicAngle + datum.stageNumber * slotAngle - PI / 2", "as": "separatorAngle"},
-        {"type": "formula", "expr": "centerX + stageRuleRadius * cos(datum.separatorAngle)", "as": "separatorX2"},
-        {"type": "formula", "expr": "centerY + stageRuleRadius * sin(datum.separatorAngle)", "as": "separatorY2"}
+        {"type": "formula", "expr": "datum.rawAngle > 90 && datum.rawAngle < 270 ? 'right' : 'left'", "as": "textAlign"}
       ]
     },
     {
