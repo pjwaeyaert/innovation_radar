@@ -165,13 +165,17 @@ function renderEntries() {
     const tangentY = Math.cos(angle);
     const spacing = 18;
     const columns = Math.ceil(Math.sqrt(items.length));
+    const rowCount = Math.ceil(items.length / columns);
+    const maxTangentOffset = Math.max(middle * Math.sin(sliceAngle / 2) - 18, 0);
+    const maxRadialOffset = Math.max(ringWidth / 2 - 18, 0);
+    const tangentStep = columns > 1 ? Math.min(spacing, (maxTangentOffset * 2) / (columns - 1)) : 0;
+    const radialStep = rowCount > 1 ? Math.min(spacing, (maxRadialOffset * 2) / (rowCount - 1)) : 0;
 
     items.forEach(({ entry }, index) => {
       const column = index % columns;
       const row = Math.floor(index / columns);
-      const tangentOffset = (column - (columns - 1) / 2) * spacing;
-      const rowCount = Math.ceil(items.length / columns);
-      const radialOffset = (row - (rowCount - 1) / 2) * spacing;
+      const tangentOffset = (column - (columns - 1) / 2) * tangentStep;
+      const radialOffset = (row - (rowCount - 1) / 2) * radialStep;
       const x = base.x + tangentX * tangentOffset + radialX * radialOffset;
       const y = base.y + tangentY * tangentOffset + radialY * radialOffset;
       const group = createSvgElement("g", {
@@ -226,6 +230,14 @@ function renderLegend() {
   });
 }
 
-renderGrid();
-renderEntries();
-renderLegend();
+function renderRadar() {
+  svg.replaceChildren();
+  legendList.replaceChildren();
+  renderGrid();
+  renderEntries();
+  renderLegend();
+}
+
+window.addEventListener("load", () => {
+  window.requestAnimationFrame(renderRadar);
+});
