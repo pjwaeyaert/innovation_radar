@@ -157,14 +157,21 @@ function renderEntries() {
     const angle = -Math.PI / 2 + topicIndex * sliceAngle + sliceAngle / 2;
     const { middle } = ringBounds(stageIndex);
     const base = polarToCartesian(middle, angle);
+    const radialX = Math.cos(angle);
+    const radialY = Math.sin(angle);
     const tangentX = -Math.sin(angle);
     const tangentY = Math.cos(angle);
     const spacing = 18;
+    const columns = Math.ceil(Math.sqrt(items.length));
 
     items.forEach(({ entry }, index) => {
-      const offset = (index - (items.length - 1) / 2) * spacing;
-      const x = base.x + tangentX * offset;
-      const y = base.y + tangentY * offset;
+      const column = index % columns;
+      const row = Math.floor(index / columns);
+      const tangentOffset = (column - (columns - 1) / 2) * spacing;
+      const rowCount = Math.ceil(items.length / columns);
+      const radialOffset = (row - (rowCount - 1) / 2) * spacing;
+      const x = base.x + tangentX * tangentOffset + radialX * radialOffset;
+      const y = base.y + tangentY * tangentOffset + radialY * radialOffset;
 
       svg.appendChild(createSvgElement("circle", {
         cx: x,
