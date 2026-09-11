@@ -1,563 +1,273 @@
 {
+  "$schema": "https://vega.github.io/schema/vega/v5.json",
   "width": 760,
   "height": 760,
-
-  "layer": [
-
+  "padding": 5,
+  "autosize": "pad",
+  "signals": [
+    {"name": "centerX", "update": "width / 2"},
+    {"name": "centerY", "update": "height / 2"},
+    {"name": "innerRadius", "value": 35},
+    {"name": "dataOuterRadius", "value": 280},
+    {"name": "stageRuleRadius", "value": 315},
+    {"name": "topicRuleRadius", "value": 330},
+    {"name": "stageLabelRadius", "value": 350},
+    {"name": "topicLabelRadius", "value": 382},
+    {"name": "overlapOffsetStep", "value": 14},
+    {"name": "topicCount", "update": "max(length(data('topicOrder')), 1)"},
+    {"name": "stageCount", "update": "max(length(data('stageOrder')), 1)"},
+    {"name": "ringCount", "update": "max(length(data('trlOrder')), 1)"},
+    {"name": "topicAngle", "update": "2 * PI / topicCount"},
+    {"name": "slotAngle", "update": "topicAngle / stageCount"},
+    {"name": "ringStep", "update": "ringCount > 1 ? (dataOuterRadius - innerRadius) / (ringCount - 1) : 0"},
+    {"name": "singleRingRadius", "update": "(innerRadius + dataOuterRadius) / 2"},
+    {"name": "topicLabelFontSize", "update": "max(8, min(11, 13 - topicCount / 3))"},
+    {"name": "stageLabelFontSize", "update": "max(6, min(8, 12 - topicCount * stageCount / 15))"}
+  ],
+  "data": [
+    {"name": "dataset"},
     {
-      "data": {
-        "values": [
-          {"r": 1},
-          {"r": 2},
-          {"r": 3},
-          {"r": 4},
-          {"r": 5},
-          {"r": 6},
-          {"r": 7},
-          {"r": 8},
-          {"r": 9}
-        ]
-      },
-
-      "mark": {
-        "type": "circle",
-        "fill": null,
-        "stroke": "#D0D0D0",
-        "strokeWidth": 1
-      },
-
-      "encoding": {
-        "x": {"value": 380},
-        "y": {"value": 380},
-
-        "size": {
-          "field": "r",
-          "type": "quantitative",
-          "scale": {
-            "domain": [1, 9],
-            "range": [2500, 313600]
-          },
-          "legend": null
-        }
-      }
-    },
-
-
-    {
-      "data": {
-        "values": [
-
-          {"topic":0,"stage":1},
-          {"topic":0,"stage":2},
-          {"topic":0,"stage":3},
-          {"topic":0,"stage":4},
-          {"topic":0,"stage":5},
-          {"topic":0,"stage":6},
-
-          {"topic":1,"stage":1},
-          {"topic":1,"stage":2},
-          {"topic":1,"stage":3},
-          {"topic":1,"stage":4},
-          {"topic":1,"stage":5},
-          {"topic":1,"stage":6},
-
-          {"topic":2,"stage":1},
-          {"topic":2,"stage":2},
-          {"topic":2,"stage":3},
-          {"topic":2,"stage":4},
-          {"topic":2,"stage":5},
-          {"topic":2,"stage":6},
-
-          {"topic":3,"stage":1},
-          {"topic":3,"stage":2},
-          {"topic":3,"stage":3},
-          {"topic":3,"stage":4},
-          {"topic":3,"stage":5},
-          {"topic":3,"stage":6},
-
-          {"topic":4,"stage":1},
-          {"topic":4,"stage":2},
-          {"topic":4,"stage":3},
-          {"topic":4,"stage":4},
-          {"topic":4,"stage":5},
-          {"topic":4,"stage":6},
-
-          {"topic":5,"stage":1},
-          {"topic":5,"stage":2},
-          {"topic":5,"stage":3},
-          {"topic":5,"stage":4},
-          {"topic":5,"stage":5},
-          {"topic":5,"stage":6},
-
-          {"topic":6,"stage":1},
-          {"topic":6,"stage":2},
-          {"topic":6,"stage":3},
-          {"topic":6,"stage":4},
-          {"topic":6,"stage":5},
-          {"topic":6,"stage":6},
-
-          {"topic":7,"stage":1},
-          {"topic":7,"stage":2},
-          {"topic":7,"stage":3},
-          {"topic":7,"stage":4},
-          {"topic":7,"stage":5},
-          {"topic":7,"stage":6},
-
-          {"topic":8,"stage":1},
-          {"topic":8,"stage":2},
-          {"topic":8,"stage":3},
-          {"topic":8,"stage":4},
-          {"topic":8,"stage":5},
-          {"topic":8,"stage":6}
-
-        ]
-      },
-
+      "name": "topicOrder",
+      "source": "dataset",
       "transform": [
-
-        {
-          "calculate": "datum['topic'] * 2 * PI / 9 + datum['stage'] * 2 * PI / 54 - PI / 2",
-          "as": "Angle"
-        },
-
-        {
-          "calculate": "380 + 315 * cos(datum['Angle'])",
-          "as": "X2"
-        },
-
-        {
-          "calculate": "380 + 315 * sin(datum['Angle'])",
-          "as": "Y2"
-        }
-
-      ],
-
-      "mark": {
-        "type": "rule",
-        "stroke": "#D8D8D8",
-        "strokeWidth": 1,
-        "strokeDash": [4,4]
-      },
-
-      "encoding": {
-
-        "x": {"value":380},
-        "y": {"value":380},
-
-        "x2": {
-          "field":"X2",
-          "type":"quantitative"
-        },
-
-        "y2": {
-          "field":"Y2",
-          "type":"quantitative"
-        }
-
-      }
+        {"type": "filter", "expr": "isValid(datum['Topic']) && datum['Topic'] !== ''"},
+        {"type": "window", "ops": ["row_number"], "as": ["rowOrder"]},
+        {"type": "aggregate", "groupby": ["Topic"], "fields": ["rowOrder"], "ops": ["min"], "as": ["firstRow"]},
+        {"type": "collect", "sort": {"field": "firstRow", "order": "ascending"}},
+        {"type": "window", "ops": ["row_number"], "as": ["topicNumber"]},
+        {"type": "formula", "expr": "datum.topicNumber - 1", "as": "topicIndex"}
+      ]
     },
-
-
     {
-      "data": {
-        "values": [
-          {"topic":0},
-          {"topic":1},
-          {"topic":2},
-          {"topic":3},
-          {"topic":4},
-          {"topic":5},
-          {"topic":6},
-          {"topic":7},
-          {"topic":8}
-        ]
-      },
-
+      "name": "stageOrder",
+      "source": "dataset",
       "transform": [
-
-        {
-          "calculate": "datum['topic'] * 2 * PI / 9 - PI /6",
-          "as": "Angle"
-        },
-
-        {
-          "calculate": "380 + 330 * cos(datum['Angle'])",
-          "as": "X2"
-        },
-
-        {
-          "calculate": "380 + 330 * sin(datum['Angle'])",
-          "as": "Y2"
-        }
-
-      ],
-
-      "mark": {
-        "type":"rule",
-        "stroke":"#888888",
-        "strokeWidth":1
-      },
-
-      "encoding": {
-
-        "x":{"value":380},
-        "y":{"value":380},
-
-        "x2":{
-          "field":"X2",
-          "type":"quantitative"
-        },
-
-        "y2":{
-          "field":"Y2",
-          "type":"quantitative"
-        }
-
-      }
+        {"type": "filter", "expr": "isValid(datum['Internal Stage']) && datum['Internal Stage'] !== ''"},
+        {"type": "formula", "expr": "toNumber(split(datum['Internal Stage'], ' ')[0])", "as": "StageNum"},
+        {"type": "aggregate", "groupby": ["Internal Stage", "StageNum"], "ops": ["count"], "as": ["rowCount"]},
+        {"type": "collect", "sort": {"field": "StageNum", "order": "ascending"}},
+        {"type": "window", "ops": ["row_number"], "as": ["stageNumber"]},
+        {"type": "formula", "expr": "datum.stageNumber - 1", "as": "stageIndex"},
+        {"type": "formula", "expr": "replace(datum['Internal Stage'], ' - ', '\\n')", "as": "displayLabel"}
+      ]
     },
-
-
     {
-      "data": {
-        "name":"dataset"
-      },
-
+      "name": "trlOrder",
+      "source": "dataset",
       "transform": [
-
+        {"type": "filter", "expr": "isValid(datum['TRL level']) && datum['TRL level'] !== ''"},
+        {"type": "formula", "expr": "toNumber(split(datum['TRL level'], ' ')[0])", "as": "TrlNum"},
+        {"type": "aggregate", "groupby": ["TRL level", "TrlNum"], "ops": ["count"], "as": ["rowCount"]},
+        {"type": "collect", "sort": {"field": "TrlNum", "order": "ascending"}},
+        {"type": "window", "ops": ["row_number"], "as": ["trlNumber"]},
+        {"type": "formula", "expr": "datum.trlNumber - 1", "as": "trlIndex"}
+      ]
+    },
+    {
+      "name": "topicSeparators",
+      "source": "topicOrder",
+      "transform": [
+        {"type": "formula", "expr": "(datum.topicIndex + 1) * topicAngle - PI / 2", "as": "angle"},
+        {"type": "formula", "expr": "centerX + topicRuleRadius * cos(datum.angle)", "as": "x2"},
+        {"type": "formula", "expr": "centerY + topicRuleRadius * sin(datum.angle)", "as": "y2"}
+      ]
+    },
+    {
+      "name": "topicLabels",
+      "source": "topicOrder",
+      "transform": [
+        {"type": "formula", "expr": "(datum.topicIndex + 0.5) * topicAngle - PI / 2", "as": "angle"},
+        {"type": "formula", "expr": "centerX + topicLabelRadius * cos(datum.angle)", "as": "x"},
+        {"type": "formula", "expr": "centerY + topicLabelRadius * sin(datum.angle)", "as": "y"}
+      ]
+    },
+    {
+      "name": "stageGrid",
+      "transform": [
+        {"type": "sequence", "start": 0, "stop": {"signal": "topicCount * stageCount"}, "as": "slot"},
+        {"type": "formula", "expr": "floor(datum.slot / stageCount)", "as": "topicIndex"},
+        {"type": "formula", "expr": "datum.slot % stageCount", "as": "stageIndex"},
+        {"type": "lookup", "from": "topicOrder", "key": "topicIndex", "fields": ["topicIndex"], "values": ["Topic"], "as": ["Topic"]},
         {
-          "calculate":"toNumber(split(datum['TRL level'], ' ')[0])",
-          "as":"TRL"
+          "type": "lookup",
+          "from": "stageOrder",
+          "key": "stageIndex",
+          "fields": ["stageIndex"],
+          "values": ["Internal Stage", "displayLabel", "stageNumber"],
+          "as": ["StageLabel", "displayLabel", "stageNumber"]
         },
-
+        {"type": "formula", "expr": "datum.topicIndex * topicAngle + (stageCount - datum.stageIndex - 0.5) * slotAngle - PI / 2", "as": "angle"},
+        {"type": "formula", "expr": "stageLabelRadius + (datum.stageIndex % 2) * 14", "as": "labelRadius"},
+        {"type": "formula", "expr": "centerX + datum.labelRadius * cos(datum.angle)", "as": "x"},
+        {"type": "formula", "expr": "centerY + datum.labelRadius * sin(datum.angle)", "as": "y"},
+        {"type": "formula", "expr": "datum.angle * 180 / PI + 90", "as": "rawAngle"},
+        {"type": "formula", "expr": "datum.rawAngle > 90 && datum.rawAngle < 270 ? datum.rawAngle + 180 : datum.rawAngle", "as": "textAngle"},
+        {"type": "formula", "expr": "datum.rawAngle > 90 && datum.rawAngle < 270 ? 'right' : 'left'", "as": "textAlign"}
+      ]
+    },
+    {
+      "name": "stageSeparators",
+      "transform": [
+        {"type": "sequence", "start": 0, "stop": {"signal": "topicCount * max(stageCount - 1, 0)"}, "as": "slot"},
+        {"type": "formula", "expr": "floor(datum.slot / max(stageCount - 1, 1))", "as": "topicIndex"},
+        {"type": "formula", "expr": "datum.slot % max(stageCount - 1, 1)", "as": "stageIndex"},
+        {"type": "formula", "expr": "datum.stageIndex + 1", "as": "stageNumber"},
+        {"type": "formula", "expr": "datum.topicIndex * topicAngle + datum.stageNumber * slotAngle - PI / 2", "as": "separatorAngle"},
+        {"type": "formula", "expr": "centerX + stageRuleRadius * cos(datum.separatorAngle)", "as": "separatorX2"},
+        {"type": "formula", "expr": "centerY + stageRuleRadius * sin(datum.separatorAngle)", "as": "separatorY2"}
+      ]
+    },
+    {
+      "name": "points",
+      "source": "dataset",
+      "transform": [
         {
-          "calculate":"toNumber(split(datum['Internal Stage'], ' ')[0])",
-          "as":"Stage"
+          "type": "filter",
+          "expr": "isValid(datum['Topic']) && datum['Topic'] !== '' && isValid(datum['Internal Stage']) && datum['Internal Stage'] !== '' && isValid(datum['TRL level']) && datum['TRL level'] !== ''"
         },
-
+        {"type": "lookup", "from": "topicOrder", "key": "Topic", "fields": ["Topic"], "values": ["topicIndex"], "as": ["TopicIndex"]},
+        {"type": "lookup", "from": "stageOrder", "key": "Internal Stage", "fields": ["Internal Stage"], "values": ["stageIndex"], "as": ["StageIndex"]},
+        {"type": "lookup", "from": "trlOrder", "key": "TRL level", "fields": ["TRL level"], "values": ["trlIndex"], "as": ["TrlIndex"]},
+        {"type": "filter", "expr": "isValid(datum.TopicIndex) && isValid(datum.StageIndex) && isValid(datum.TrlIndex)"},
+        {"type": "joinaggregate", "groupby": ["TopicIndex", "StageIndex", "TrlIndex"], "ops": ["count"], "as": ["overlapCount"]},
         {
-          "calculate":"indexof(['Immobilisation','Thermal treatment','Fytoremediation','Soil washing','Destruction','Adsorption','Ion Exchange','Foam Fractionation','Membrane technology'], datum['Topic'])",
-          "as":"TopicIndex"
-        },
-
-        {
-          "calculate":"datum['TopicIndex'] * 2 * PI / 9 - (datum['Stage'] - 5.5) *2* PI / 54 - PI / 2",
-          "as":"Angle"
-        },
-
-        {
-          "calculate":"35 + ((datum['TRL'] - 1) / 8) * 245",
-          "as":"Radius"
-        },
-
-        {
-          "calculate":"380 + datum['Radius'] * cos(datum['Angle'])",
-          "as":"X"
-        },
-
-        {
-          "calculate":"380 + datum['Radius'] * sin(datum['Angle'])",
-          "as":"Y"
-        }
-
-      ],
-
-      "mark": {
-        "type":"point",
-        "filled":true,
-        "size":180,
-        "stroke":"white",
-        "strokeWidth":1.5
-      },
-
-      "encoding": {
-
-        "x":{
-          "field":"X",
-          "type":"quantitative",
-          "scale":{"domain":[0,760]},
-          "axis":null
-        },
-
-        "y":{
-          "field":"Y",
-          "type":"quantitative",
-          "scale":{"domain":[0,760]},
-          "axis":null
-        },
-
-        "color":{
-          "field":"Medium",
-          "type":"nominal",
-          "scale":{
-            "range":["#FF2314","#63ABFF"]
-          },
-          "legend":{
-            "title":"Medium"
+          "type": "collect",
+          "sort": {
+            "field": ["TopicIndex", "StageIndex", "TrlIndex", "Supplier", "Technique/product"],
+            "order": ["ascending", "ascending", "ascending", "ascending", "ascending"]
           }
         },
-
-        "tooltip":[
-
-          {
-            "field":"Supplier",
-            "type":"nominal",
-            "title":"Supplier"
-            
-          },
-
-          {
-            "field":"Technique/product",
-            "type":"nominal",
-            "title":"Technique / Product"
-          },
-
-          {
-            "field":"Description",
-            "type":"nominal",
-            "title":"Description"
-          },
-
-          {
-            "field":"Responsible",
-            "type":"nominal",
-            "title":"Responsible"
-          },
-
-          {
-            "field":"Type",
-            "type":"nominal",
-            "title":"Type"
-          },
-
-          {
-            "field":"Contaminant",
-            "type":"nominal",
-            "title":"Contaminant"
-          },
-
-          {
-            "field":"Medium",
-            "type":"nominal",
-            "title":"Medium"
-          },
-
-          {
-            "field":"Topic",
-            "type":"nominal",
-            "title":"Topic"
-          },
-
-          {
-            "field":"TRL level",
-            "type":"nominal",
-            "title":"TRL"
-          },
-
-          {
-            "field":"Internal Stage",
-            "type":"nominal",
-            "title":"Internal Stage"
+        {"type": "window", "groupby": ["TopicIndex", "StageIndex", "TrlIndex"], "ops": ["row_number"], "as": ["overlapIndex"]},
+        {"type": "formula", "expr": "datum.TopicIndex * topicAngle + (stageCount - datum.StageIndex - 0.5) * slotAngle - PI / 2", "as": "angle"},
+        {"type": "formula", "expr": "ringCount > 1 ? innerRadius + datum.TrlIndex * ringStep : singleRingRadius", "as": "radius"},
+        {"type": "formula", "expr": "(datum.overlapIndex - (datum.overlapCount + 1) / 2) * overlapOffsetStep", "as": "overlapOffset"},
+        {"type": "formula", "expr": "centerX + datum.radius * cos(datum.angle) + datum.overlapOffset * cos(datum.angle + PI / 2)", "as": "x"},
+        {"type": "formula", "expr": "centerY + datum.radius * sin(datum.angle) + datum.overlapOffset * sin(datum.angle + PI / 2)", "as": "y"}
+      ]
+    },
+    {
+      "name": "mediumOrder",
+      "source": "points",
+      "transform": [
+        {"type": "aggregate", "groupby": ["Medium"], "ops": ["count"], "as": ["rowCount"]},
+        {"type": "formula", "expr": "datum.Medium === 'Soil' ? 0 : datum.Medium === 'Water' ? 1 : 2", "as": "sortGroup"},
+        {"type": "collect", "sort": {"field": ["sortGroup", "Medium"], "order": ["ascending", "ascending"]}}
+      ]
+    }
+  ],
+  "scales": [
+    {
+      "name": "mediumColor",
+      "type": "ordinal",
+      "domain": {"data": "mediumOrder", "field": "Medium"},
+      "range": ["#FF2314", "#63ABFF", "#2CA02C", "#9467BD", "#8C564B", "#E377C2", "#7F7F7F", "#BCBD22", "#17BECF", "#1F77B4"]
+    }
+  ],
+  "legends": [
+    {"fill": "mediumColor", "title": "Medium", "orient": "right"}
+  ],
+  "marks": [
+    {
+      "type": "arc",
+      "from": {"data": "trlOrder"},
+      "encode": {
+        "update": {
+          "x": {"signal": "centerX"},
+          "y": {"signal": "centerY"},
+          "startAngle": {"value": 0},
+          "endAngle": {"signal": "2 * PI"},
+          "innerRadius": {"signal": "max((ringCount > 1 ? innerRadius + datum.trlIndex * ringStep : singleRingRadius) - 0.5, 0)"},
+          "outerRadius": {"signal": "(ringCount > 1 ? innerRadius + datum.trlIndex * ringStep : singleRingRadius) + 0.5"},
+          "stroke": {"value": "#D0D0D0"},
+          "strokeWidth": {"value": 1},
+          "fillOpacity": {"value": 0}
+        }
+      }
+    },
+    {
+      "type": "rule",
+      "from": {"data": "stageSeparators"},
+      "encode": {
+        "update": {
+          "x": {"signal": "centerX"},
+          "y": {"signal": "centerY"},
+          "x2": {"field": "separatorX2"},
+          "y2": {"field": "separatorY2"},
+          "stroke": {"value": "#D8D8D8"},
+          "strokeWidth": {"value": 1},
+          "strokeDash": {"value": [4, 4]}
+        }
+      }
+    },
+    {
+      "type": "rule",
+      "from": {"data": "topicSeparators"},
+      "encode": {
+        "update": {
+          "x": {"signal": "centerX"},
+          "y": {"signal": "centerY"},
+          "x2": {"field": "x2"},
+          "y2": {"field": "y2"},
+          "stroke": {"value": "#888888"},
+          "strokeWidth": {"value": 1}
+        }
+      }
+    },
+    {
+      "type": "symbol",
+      "from": {"data": "points"},
+      "encode": {
+        "update": {
+          "x": {"field": "x"},
+          "y": {"field": "y"},
+          "size": {"value": 180},
+          "shape": {"value": "circle"},
+          "fill": {"scale": "mediumColor", "field": "Medium"},
+          "stroke": {"value": "white"},
+          "strokeWidth": {"value": 1.5},
+          "tooltip": {
+            "signal": "{'Supplier': datum['Supplier'], 'Technique / Product': datum['Technique/product'], 'Description': datum['Description'], 'Responsible': datum['Responsible'], 'Type': datum['Type'], 'Contaminant': datum['Contaminant'], 'Medium': datum['Medium'], 'Topic': datum['Topic'], 'TRL': datum['TRL level'], 'Internal Stage': datum['Internal Stage']}"
           }
-
-        ]
-
+        }
       }
     },
-
-
     {
-      "data": {
-        "values": [
-          {"topic":0,"label":"Immobilisation"},
-          {"topic":1,"label":"Thermal treatment"},
-          {"topic":2,"label":"Fytoremediation"},
-          {"topic":3,"label":"Soil washing"},
-          {"topic":4,"label":"Destruction"},
-          {"topic":5,"label":"Adsorption"},
-          {"topic":6,"label":"Ion Exchange"},
-          {"topic":7,"label":"Foam Fractionation"},
-          {"topic":8,"label":"Membrane technology"}
-        ]
-      },
-
-      "transform":[
-
-        {
-          "calculate":"(datum['topic'] + 0.5) * 2 * PI / 9 - PI / 2",
-          "as":"Angle"
-        },
-
-        {
-          "calculate":"380 + 380 * cos(datum['Angle'])",
-          "as":"X"
-        },
-
-        {
-          "calculate":"380 + 380 * sin(datum['Angle'])",
-          "as":"Y"
+      "type": "text",
+      "from": {"data": "topicLabels"},
+      "encode": {
+        "update": {
+          "x": {"field": "x"},
+          "y": {"field": "y"},
+          "text": {"field": "Topic"},
+          "align": {"value": "center"},
+          "baseline": {"value": "middle"},
+          "fontWeight": {"value": "bold"},
+          "fontSize": {"signal": "topicLabelFontSize"},
+          "fill": {"value": "#111111"}
         }
-
-      ],
-
-      "mark":{
-        "type":"text",
-        "fontSize":11,
-        "fontWeight":"bold",
-        "align":"center",
-        "baseline":"middle"
-      },
-
-      "encoding":{
-
-        "x":{
-          "field":"X",
-          "type":"quantitative",
-          "scale":{"domain":[0,760]},
-          "axis":null
-        },
-
-        "y":{
-          "field":"Y",
-          "type":"quantitative",
-          "scale":{"domain":[0,760]},
-          "axis":null
-        },
-
-        "text":{
-          "field":"label",
-          "type":"nominal"
-        }
-
       }
     },
-
-
     {
-      "data":{
-        "values":[
-
-          {"topic":0,"stage":0,"label":"0 - Idea"},
-          {"topic":0,"stage":1,"label":"1 - Feasibility"},
-          {"topic":0,"stage":2,"label":"2 - Business Plan"},
-          {"topic":0,"stage":3,"label":"3 - Development"},
-          {"topic":0,"stage":4,"label":"4 - Testing"},
-          {"topic":0,"stage":5,"label":"5 - Implementation"},
-
-          {"topic":1,"stage":0,"label":"0 - Idea"},
-          {"topic":1,"stage":1,"label":"1 - Feasibility"},
-          {"topic":1,"stage":2,"label":"2 - Business Plan"},
-          {"topic":1,"stage":3,"label":"3 - Development"},
-          {"topic":1,"stage":4,"label":"4 - Testing"},
-          {"topic":1,"stage":5,"label":"5 - Implementation"},
-
-          {"topic":2,"stage":0,"label":"0 - Idea"},
-          {"topic":2,"stage":1,"label":"1 - Feasibility"},
-          {"topic":2,"stage":2,"label":"2 - Business Plan"},
-          {"topic":2,"stage":3,"label":"3 - Development"},
-          {"topic":2,"stage":4,"label":"4 - Testing"},
-          {"topic":2,"stage":5,"label":"5 - Implementation"},
-
-          {"topic":3,"stage":0,"label":"0 - Idea"},
-          {"topic":3,"stage":1,"label":"1 - Feasibility"},
-          {"topic":3,"stage":2,"label":"2 - Business Plan"},
-          {"topic":3,"stage":3,"label":"3 - Development"},
-          {"topic":3,"stage":4,"label":"4 - Testing"},
-          {"topic":3,"stage":5,"label":"5 - Implementation"},
-
-          {"topic":4,"stage":0,"label":"0 - Idea"},
-          {"topic":4,"stage":1,"label":"1 - Feasibility"},
-          {"topic":4,"stage":2,"label":"2 - Business Plan"},
-          {"topic":4,"stage":3,"label":"3 - Development"},
-          {"topic":4,"stage":4,"label":"4 - Testing"},
-          {"topic":4,"stage":5,"label":"5 - Implementation"},
-
-          {"topic":5,"stage":0,"label":"0 - Idea"},
-          {"topic":5,"stage":1,"label":"1 - Feasibility"},
-          {"topic":5,"stage":2,"label":"2 - Business Plan"},
-          {"topic":5,"stage":3,"label":"3 - Development"},
-          {"topic":5,"stage":4,"label":"4 - Testing"},
-          {"topic":5,"stage":5,"label":"5 - Implementation"},
-
-          {"topic":6,"stage":0,"label":"0 - Idea"},
-          {"topic":6,"stage":1,"label":"1 - Feasibility"},
-          {"topic":6,"stage":2,"label":"2 - Business Plan"},
-          {"topic":6,"stage":3,"label":"3 - Development"},
-          {"topic":6,"stage":4,"label":"4 - Testing"},
-          {"topic":6,"stage":5,"label":"5 - Implementation"},
-
-          {"topic":7,"stage":0,"label":"0 - Idea"},
-          {"topic":7,"stage":1,"label":"1 - Feasibility"},
-          {"topic":7,"stage":2,"label":"2 - Business Plan"},
-          {"topic":7,"stage":3,"label":"3 - Development"},
-          {"topic":7,"stage":4,"label":"4 - Testing"},
-          {"topic":7,"stage":5,"label":"5 - Implementation"},
-
-          {"topic":8,"stage":0,"label":"0 - Idea"},
-          {"topic":8,"stage":1,"label":"1 - Feasibility"},
-          {"topic":8,"stage":2,"label":"2 - Business Plan"},
-          {"topic":8,"stage":3,"label":"3 - Development"},
-          {"topic":8,"stage":4,"label":"4 - Testing"},
-          {"topic":8,"stage":5,"label":"5 - Implementation"}
-
-        ]
-      },
-
-      "transform":[
-
-        {
-          "calculate":"(datum['topic'] * 6 - datum['stage'] - 0.5) * 2 * PI / 54 -PI/2",
-          "as":"Angle"
-        },
-
-        {
-          "calculate":"380 + 330 * cos(datum['Angle'])",
-          "as":"X"
-        },
-
-        {
-          "calculate":"380 + 340 * sin(datum['Angle'])",
-          "as":"Y"
+      "type": "text",
+      "from": {"data": "stageGrid"},
+      "encode": {
+        "update": {
+          "x": {"field": "x"},
+          "y": {"field": "y"},
+          "text": {"field": "displayLabel"},
+          "angle": {"field": "textAngle"},
+          "align": {"field": "textAlign"},
+          "baseline": {"value": "middle"},
+          "fontSize": {"signal": "stageLabelFontSize"},
+          "lineHeight": {"signal": "stageLabelFontSize + 1"},
+          "fill": {"value": "#777777"}
         }
-
-      ],
-
-      "mark":{
-        "type":"text",
-        "fontSize":8,
-        "fill":"#777777",
-        "align":"center",
-        "baseline":"middle"
-      },
-
-      "encoding":{
-
-        "x":{
-          "field":"X",
-          "type":"quantitative",
-          "scale":{"domain":[0,760]},
-          "axis":null
-        },
-
-        "y":{
-          "field":"Y",
-          "type":"quantitative",
-          "scale":{"domain":[0,760]},
-          "axis":null
-        },
-
-        "text":{
-          "field":"label",
-          "type":"nominal"
-        }
-
       }
     }
-
   ],
-
-  "config":{
-    "view":{
-      "stroke":null
+  "config": {
+    "view": {
+      "stroke": null
     }
   }
 }
